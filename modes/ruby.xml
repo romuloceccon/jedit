@@ -11,8 +11,6 @@
     <MODE NAME="ruby" FILE="ruby.xml" FILE_NAME_GLOB="*.{rb,rbw}" FIRST_LINE_GLOB="#!*/*ruby*" /> -->
 <MODE>
 	<PROPS>
-		<PROPERTY NAME="indentOpenBrackets" VALUE="{"/>
-		<PROPERTY NAME="indentCloseBrackets" VALUE="}"/>
 		<PROPERTY NAME="unalignedOpenBrackets" VALUE="("/>
 		<PROPERTY NAME="unalignedCloseBrackets" VALUE=")"/>
 		<PROPERTY NAME="lineUpClosingBracket" VALUE="true"/>
@@ -25,7 +23,7 @@
 		<PROPERTY NAME="unindentNextLines" VALUE="^\s*(end\s*|else.*|rescue.*|elsif.*|when.*|ensure.*)$"/>
 		<PROPERTY NAME="indentNextLine"
 			  VALUE="^[^#]*([^$](:|\+|~|\*|-|%|&lt;|&gt;|&amp;|\^|\.|=)|\s(/|\!|\?|\|)|\b(not|and|or)|\\)\s*$"/>
-		<PROPERTY NAME="electricKeys" VALUE="edfn"/>
+    <PROPERTY NAME="electricLine" VALUE="^\s*(end\s*|(else|elsif|rescue|when|ensure)\s?.*)$" />
 	</PROPS>
 	<RULES IGNORE_CASE="FALSE" HIGHLIGHT_DIGITS="TRUE"
 	       DIGIT_RE="(0b[01]([01_]*[01])?)|(0x[\p{XDigit}]([\p{XDigit}_]*[\p{XDigit}])?)|(0([0-7_]*[0-7])?)|(0d[0-9]([0-9_]*[0-9])?)|([1-9]([0-9_]*[0-9])?)|([0-9]([0-9_]*[0-9])?[Ee]([0-9]([0-9_]*[0-9])?)?)">

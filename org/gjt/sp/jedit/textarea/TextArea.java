@@ -31,6 +31,8 @@ import java.util.TooManyListenersException;
 import java.text.BreakIterator;
 import java.text.CharacterIterator;
 
+import java.util.regex.Pattern;
+
 import javax.annotation.Nonnull;
 import javax.swing.*;
 import javax.swing.event.*;
@@ -2277,6 +2279,8 @@ forward_scan:	do
 		{
 			caret = getCharacterBoundaryAt(newCaret);
 			caretLine = getLineOfOffset(caret);
+			if (caretLine != oldCaretLine)
+				previousIndent = null;
 
 			magicCaret = -1;
 
@@ -3406,12 +3410,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			{
 				if(!doWordWrap(ch == ' '))
 				{
-					boolean indent = buffer.isElectricKey(ch, caretLine) &&
-						"full".equals(buffer.getStringProperty("autoIndent")) &&
-						/* if the line is not manually indented */
-						(buffer.getCurrentIndentForLine(caretLine, null) ==
-							buffer.getIdealIndentForLine(caretLine));
-					insert(str,indent);
+					int indentAction = getIndentAction(ch);
+					insert(str,indentAction);
 				}
 			}
 			else
@@ -5442,14 +5442,20 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		return true;
 	} //}}}
 
+	private static final int NO_INDENT = 0;
+	private static final int DO_INDENT = 1;
+	private static final int UNDO_INDENT = 2;
+
 	//{{{ insert() method
-	protected void insert(String str, boolean indent)
+	protected void insert(String str, int indentAction)
 	{
+		boolean compoundEdit = overwrite || indentAction != NO_INDENT;
+		
 		try
 		{
 			// Don't overstrike if we're on the end of
 			// the line
-			if(overwrite || indent)
+			if(compoundEdit)
 				buffer.beginCompoundEdit();
 
 			if(overwrite)
@@ -5461,15 +5467,88 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 
 			buffer.insert(caret,str);
 
-			if(indent)
+			if(indentAction == DO_INDENT)
+			{
+				saveIndent();
 				buffer.indentLine(caretLine,true);
+			}
+			else if(indentAction == UNDO_INDENT)
+				undoIndent();
 		}
 		finally
 		{
-			if(overwrite || indent)
+			if(compoundEdit)
 				buffer.endCompoundEdit();
 		}
 	} //}}}
+
+	private String previousIndent;
+	
+	private String getLeadingWhitespaceChars(int line)
+	{
+		StringBuffer strBuf = new StringBuffer();
+		String lineText = getLineText(line);
+		
+		for (int i = 0; i < lineText.length(); i++)
+		{
+			char c = lineText.charAt(i);
+			if (c == ' ' || c == '\t')
+				strBuf.append(c);
+			else
+				break;
+		}
+		
+		return strBuf.toString();
+	}
+	
+	private void saveIndent()
+	{
+		previousIndent = getLeadingWhitespaceChars(caretLine);
+	}
+	
+	private void undoIndent()
+	{
+		if (previousIndent == null)
+			return;
+		
+		int start = buffer.getLineStartOffset(caretLine);
+		String whitespace = getLeadingWhitespaceChars(caretLine);
+		buffer.remove(start, whitespace.length());
+		buffer.insert(start, previousIndent);
+		
+		previousIndent = null;
+	}
+	
+	private int getIndentAction(char c)
+	{
+		Pattern pattern = buffer.getElectricLinePattern(caretLine);
+
+		if (pattern == null)
+		{
+			boolean indent = buffer.isElectricKey(c, caretLine) &&
+				"full".equals(buffer.getStringProperty("autoIndent")) &&
+				/* if the line is not manually indented */
+				(buffer.getCurrentIndentForLine(caretLine, null) ==
+					buffer.getIdealIndentForLine(caretLine)); 
+			return indent ? DO_INDENT : NO_INDENT;
+		}
+		
+		StringBuffer strBuf = new StringBuffer();
+		int start = buffer.getLineStartOffset(caretLine);
+		int end = buffer.getLineEndOffset(caretLine);
+		strBuf.append(buffer.getText(start,caret - start));
+		strBuf.append(c);
+		strBuf.append(buffer.getText(caret,end - caret - 1));
+			
+		boolean matched = pattern.matcher(strBuf.toString()).matches();
+
+		if (matched && previousIndent == null)
+			return DO_INDENT;
+		else if (!matched && previousIndent != null)
+			return UNDO_INDENT;
+		else
+			return NO_INDENT;
+	}
 
 	//{{{ insertTab() method
 	private void insertTab()

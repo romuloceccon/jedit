@@ -407,6 +407,38 @@ public class Mode
 		return (electricKeys.indexOf(ch) >= 0);
 	} //}}}
 
+	//{{{ getElectricLinePattern() method
+	public Pattern getElectricLinePattern()
+	{
+		if (electricLine == null)
+			compileElectricLinePattern();
+		
+		return electricLineRE;
+	} //}}}
+
+	//{{{ compileElectricLinePattern() method
+	private synchronized void compileElectricLinePattern()
+	{
+		if (electricLine == null)
+		{
+			if ((electricLine = (String) getProperty("electricLine")) == null)
+				electricLine = "";
+			else
+			{
+				try
+				{
+					electricLineRE = Pattern.compile(electricLine);
+				}
+				catch(PatternSyntaxException e)
+				{
+					Log.log(Log.ERROR,this,
+						"Bad electricLine rule: " + electricLine);
+					Log.log(Log.ERROR, this, e);
+				}
+			}
+		}
+	} //}}}
+	
 	//{{{ initIndentRules() method
 	private void initIndentRules()
 	{
@@ -532,5 +564,7 @@ public class Mode
 	private List<IndentRule> indentRules;
 	private String electricKeys;
 	private boolean ignoreWhitespace;
+	private String electricLine;
+	private Pattern electricLineRE;
 	//}}}
 }

@@ -1314,14 +1314,25 @@ loop:		for(int i = 0; i < seg.count; i++)
 	 */
 	public boolean isElectricKey(char ch, int line)
 	{
-		TokenMarker.LineContext ctx = lineMgr.getLineContext(line);
-		Mode mode = ModeProvider.instance.getMode(ctx.rules.getModeName());
+		Mode mode = getMode(line);
 
 		// mode can be null, though that's probably an error "further up":
 		if (mode == null)
 			return false;
 		return mode.isElectricKey(ch);
 	} //}}}
+
+	public Pattern getElectricLinePattern(int line)
+	{
+		Mode mode = getMode(line);
+		return mode != null ? mode.getElectricLinePattern() : null;
+	}
+
+	private Mode getMode(int line)
+	{
+		TokenMarker.LineContext ctx = lineMgr.getLineContext(line);
+		return ModeProvider.instance.getMode(ctx.rules.getModeName());
+	}
 
 	//}}}
 
